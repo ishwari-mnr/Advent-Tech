@@ -1,38 +1,39 @@
-import { useNavigate } from "react-router-dom";
+import React, { useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { Zap, Cpu, Layout, Globe, LineChart, Shield, Lock, AppWindow, ArrowUpRight, ArrowDown } from "lucide-react";
 import {
-  AppWindow,
-  ArrowUpRight,
-  Boxes,
-  Cpu,
-  Database,
   FileSearch,
+  RefreshCw,
+  Smartphone,
+  Network,
+  Database,
+  ShieldCheck,
   Gauge,
   GitBranch,
-  Globe,
-  Layout,
-  LineChart,
-  Lock,
-  Network,
-  RefreshCw,
-  Shield,
-  ShieldCheck,
-  Smartphone,
-  Zap,
+  Boxes,
 } from "lucide-react";
-import { SITE } from "../config/site";
-import HomeHeader, { scrollToSection } from "../components/Layout/HomeHeader";
-import FeatureCard from "../components/Landing/FeatureCard";
-import Pricing from "../components/Landing/Pricing";
-import OurClients from "../components/Landing/OurClients";
-import ContactSection from "../components/Landing/ContactSection";
-import Footer from "../components/Landing/Footer";
-import HelpWidget from "../components/Landing/HelpWidget";
 
-const MODULES = [
+import HomeHeader from "../components/Layout/HomeHeader";
+import ContactPage from "../components/UI/ContactPage";
+import { useNavigate } from "react-router-dom";
+import PricingCTA from "../components/UI/Pricing";
+import OurClients from "../components/UI/OurClients";
+
+import "./landing.css";
+import useSmoothScroll from "../components/Landing/useSmoothScroll";
+import HeroSphere from "../components/Landing/HeroSphere";
+import ModuleVisual from "../components/Landing/ModuleVisuals";
+import LandingFooter from "../components/Landing/LandingFooter";
+import HelpWidget from "../components/Landing/HelpWidget";
+import ProductConsole from "../components/Landing/ProductConsole";
+import { Reveal, RevealLines, Brackets, PlusCorners, ScrollProgress, Sparkle, EASE } from "../components/Landing/Primitives";
+
+const testingSuite = [
   {
-    icon: Globe,
+    icon: <Globe />,
     title: "Web Testing",
-    description: "An AI agent signs in to your web app, explores it and tests it while you watch.",
+    description:
+      "An AI agent signs in to your web app, explores it and tests it while you watch.",
     points: [
       "Connect → Discover → Review → Validate: it writes tests, you confirm expected results",
       "Works on public sites or behind sign-in, with approver accounts for approval flows",
@@ -41,9 +42,10 @@ const MODULES = [
     ],
   },
   {
-    icon: FileSearch,
+    icon: <FileSearch />,
     title: "Business Validation",
-    description: "Test Case Designer for before the site is built. No website needed.",
+    description:
+      "Test Case Designer for before the site is built. No website needed.",
     points: [
       "Upload a requirements document (PDF, DOCX, TXT or MD, up to 50 MB)",
       "Get back a full test case specification",
@@ -51,9 +53,10 @@ const MODULES = [
     ],
   },
   {
-    icon: RefreshCw,
+    icon: <RefreshCw />,
     title: "Regression Testing",
-    description: "Project-based regression testing that keeps every release in check.",
+    description:
+      "Project-based regression testing that keeps every release in check.",
     points: [
       "Organise work into projects",
       "Connect your existing tools",
@@ -61,7 +64,7 @@ const MODULES = [
     ],
   },
   {
-    icon: Smartphone,
+    icon: <Smartphone />,
     title: "Mobile App Testing",
     description: "Upload an Android APK and an autonomous AI agent tests it.",
     points: [
@@ -71,9 +74,10 @@ const MODULES = [
     ],
   },
   {
-    icon: Network,
+    icon: <Network />,
     title: "API Testing",
-    description: "API Guardian tests your endpoints straight from your Swagger / OpenAPI docs.",
+    description:
+      "API Guardian tests your endpoints straight from your Swagger / OpenAPI docs.",
     points: [
       "Target URL, API base URL and optional OpenAPI link",
       "Login credentials, OTP and results delivered by email",
@@ -81,9 +85,10 @@ const MODULES = [
     ],
   },
   {
-    icon: Database,
+    icon: <Database />,
     title: "DB Testing",
-    description: "Full database assessments for PostgreSQL, MongoDB or both via a replica URL.",
+    description:
+      "Full database assessments for PostgreSQL, MongoDB or both via a replica URL.",
     points: [
       "Choose Claude or GPT and pick the model",
       "Tests in SQL or JavaScript, as integration or unit tests",
@@ -91,9 +96,10 @@ const MODULES = [
     ],
   },
   {
-    icon: ShieldCheck,
+    icon: <ShieldCheck />,
     title: "Security Testing (VAPT)",
-    description: "Security assessment against the OWASP Top 10 plus API security.",
+    description:
+      "Security assessment against the OWASP Top 10 plus API security.",
     points: [
       "Checks pages behind login using a test account",
       "Reads your OpenAPI docs to cover every endpoint",
@@ -101,7 +107,7 @@ const MODULES = [
     ],
   },
   {
-    icon: Gauge,
+    icon: <Gauge />,
     title: "Performance Testing",
     description:
       "Describe a user flow in plain English. The engine plans it, finds the real endpoints and runs the load test.",
@@ -112,7 +118,7 @@ const MODULES = [
     ],
   },
   {
-    icon: GitBranch,
+    icon: <GitBranch />,
     title: "GitHub Code Testing",
     description:
       "AI reads your code's business logic, then tests whether the code does what it claims.",
@@ -123,9 +129,8 @@ const MODULES = [
     ],
   },
   {
-    icon: Boxes,
+    icon: <Boxes />,
     title: "AI SAP Testing",
-    wide: true,
     description:
       "An AI agent signs in to your SAP and tests it module by module (Finance, Sales, Purchasing, Inventory and more). No one writes test scripts.",
     points: [
@@ -135,193 +140,418 @@ const MODULES = [
       "Pass or Fail per test, with screenshots, the exact failing step and an Excel report of real defects",
       "Fits any company's SAP with no per-customer setup, and never changes real business data",
     ],
+    wide: true,
   },
 ];
 
-const CAPABILITIES = [
+const capabilities = [
   {
-    icon: Cpu,
+    icon: <Cpu />,
     title: "Intelligent Discovery",
     description: "AI-driven requirement analysis, risk prioritization, and smart test coverage planning.",
   },
   {
-    icon: Layout,
+    icon: <Layout />,
     title: "Experience Validation",
     description: "Autonomous UI, UX, accessibility, and visual regression testing across devices.",
   },
   {
-    icon: Globe,
+    icon: <Globe />,
     title: "Cloud & DevOps Ready",
     description: "Seamless automation for cloud-native, microservices, and CI/CD pipelines.",
   },
   {
-    icon: LineChart,
+    icon: <LineChart />,
     title: "Performance Intelligence",
     description: "AI-powered load, stress, and scalability testing with predictive insights.",
   },
   {
-    icon: Shield,
+    icon: <Shield />,
     title: "Self-Healing Automation",
-    description:
-      "Adaptive tests that evolve with application changes, reducing maintenance overhead.",
+    description: "Adaptive tests that evolve with application changes, reducing maintenance overhead.",
   },
   {
-    icon: Lock,
+    icon: <Lock />,
     title: "Enterprise-Grade Security",
     description: "Secure, compliant, and scalable testing for mission-critical applications.",
   },
   {
-    icon: AppWindow,
+    icon: <AppWindow />,
     title: "Power Apps Testing",
+    description: "End-to-end Power Apps testing across screens, forms, field validation, and user workflows.",
     wide: true,
-    description:
-      "End-to-end Power Apps testing across screens, forms, field validation, and user workflows.",
   },
 ];
 
-function Eyebrow({ children, className = "text-orange-500" }) {
-  return (
-    <p className={`text-sm font-semibold uppercase tracking-wide ${className}`}>{children}</p>
-  );
-}
+const H2 = "lp-display font-bold text-[clamp(1.7rem,4.1vw,3.9rem)]";
 
-export default function Home() {
+const Home = () => {
   const navigate = useNavigate();
+  useSmoothScroll();
+
+  const heroRef = useRef(null);
+  const { scrollYProgress: heroP } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const sphereY = useTransform(heroP, [0, 1], [0, 220]);
+  const sphereScale = useTransform(heroP, [0, 1], [1, 0.85]);
+  const textY = useTransform(heroP, [0, 1], [0, -90]);
+  const heroFade = useTransform(heroP, [0, 0.85], [1, 0]);
+
+  const featRef = useRef(null);
+  const { scrollYProgress: featP } = useScroll({ target: featRef, offset: ["start end", "end start"] });
+  const imgY = useTransform(featP, [0, 1], [50, -50]);
 
   return (
-    <div className="min-h-screen bg-white text-gray-800">
+    <div className="lp-root">
+      <ScrollProgress />
       <HomeHeader />
 
-      {/* Hero */}
-      <section id="home" className="scroll-mt-24 bg-gray-50 pb-20 pt-32 sm:pt-40">
-        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
-          <Eyebrow>Autonomous AI Testing for Faster, Smarter Releases</Eyebrow>
-          <h1 className="mt-4 text-4xl font-extrabold text-navy sm:text-6xl">
-            Elevate Your <span className="text-orange-500">QA</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
-            Discover the future of software testing. <strong className="text-navy">{SITE.brand}</strong>
-            's AI-driven platform automates functional, UI, API, and regression workflows with
-            intelligent defect detection.
-          </p>
-          <button
-            type="button"
-            onClick={() => scrollToSection("contact")}
-            className="mt-8 inline-flex items-center gap-2 rounded-full bg-orange-500 px-6 py-3 font-semibold text-white hover:bg-orange-600"
-          >
-            Contact Us
-            <ArrowUpRight size={18} />
-          </button>
-        </div>
+      {/* ================= HERO ================= */}
+      <section id="home" ref={heroRef} className="relative min-h-[100svh] pt-28 md:pt-32 pb-14 overflow-hidden lp-grain">
+        <div className="absolute inset-0 lp-cross-grid" />
+        <div className="absolute inset-0 lp-bloom" />
+
+        <motion.div
+          style={{ y: sphereY, scale: sphereScale }}
+          className="absolute left-1/2 -translate-x-1/2 lg:left-auto lg:translate-x-0 lg:right-[2%] top-[4%] w-[min(820px,120vw)] aspect-square pointer-events-none opacity-60 lg:opacity-100"
+        >
+          <HeroSphere className="w-full h-full" />
+        </motion.div>
+
+        <motion.div
+          style={{ y: textY, opacity: heroFade }}
+          className="relative max-w-[1400px] mx-auto px-6 md:px-12 min-h-[calc(100svh-10rem)] flex flex-col"
+        >
+          <div className="flex items-start justify-between pt-4">
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="lp-eyebrow !text-sm md:!text-base font-medium text-orange-600 leading-relaxed"
+            >
+              Autonomous AI Testing for Faster, Smarter Releases
+            </motion.p>
+
+          </div>
+
+          <div className="mt-auto grid lg:grid-cols-12 gap-10 items-end pt-16">
+            <div className="lg:col-span-8">
+              <RevealLines
+                as="h1"
+                fade={false}
+                delay={0.15}
+                className="lp-display font-extrabold text-[clamp(2.2rem,6vw,6.4rem)] text-[#0c1e5b]"
+                lines={[
+                  "Elevate Your",
+                  <span className="inline-flex items-center gap-[0.25em]">
+                    <Sparkle className="w-[0.6em] h-[0.6em] text-orange-500" />
+                    <span className="text-orange-500">QA</span>
+                  </span>,
+                ]}
+              />
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 1.4, delay: 0.8, ease: EASE }}
+                className="mt-6 h-[3px] w-[min(70%,520px)] origin-left bg-gradient-to-r from-orange-500 via-orange-400 to-transparent"
+              />
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.7, ease: EASE }}
+              className="lg:col-span-4 lg:pb-2 relative bg-[#f8f4ed]/75 backdrop-blur-md border border-[#0c1e5b]/10 rounded-[24px] p-6 md:p-7 shadow-[0_30px_60px_-40px_rgba(12,30,91,0.5)]"
+            >
+              <p className="text-[#0c1e5b]/90 font-semibold leading-relaxed mb-8 text-base md:text-lg max-w-md">
+                Discover the future of software testing.{" "}
+                <span className="text-[#0c1e5b] font-extrabold text-lg px-1.5 rounded-md bg-orange-200/80 box-decoration-clone">Advent</span>{" "}
+                <span className="text-orange-500 font-bold text-lg">AT</span>
+                ’s AI-driven platform automates functional, UI, API, and
+                regression workflows with intelligent defect detection.
+              </p>
+
+              <div className="flex gap-4 flex-wrap items-center">
+                <button
+                  onClick={() =>
+                    document
+                      .getElementById("contact")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                  className="lp-btn lp-btn-orange text-white shadow-[0_18px_40px_-16px_rgba(249,115,22,0.9)]"
+                >
+                  Contact Us
+                  <ArrowUpRight size={16} />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+
+          <div className="hidden md:flex items-center gap-4 mt-12 text-[#0c1e5b]/50">
+            <span className="relative block w-px h-12 bg-[#0c1e5b]/15 overflow-hidden">
+              <motion.span
+                className="absolute left-0 w-px h-4 bg-orange-500"
+                animate={{ top: ["-30%", "110%"] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </span>
+            <ArrowDown size={14} className="animate-bounce" />
+          </div>
+        </motion.div>
       </section>
 
-      {/* Module strip */}
-      <div className="bg-navy py-4 text-white">
-        <p className="mx-auto flex max-w-7xl flex-wrap justify-center gap-x-3 gap-y-1 px-4 text-sm font-medium sm:px-6">
-          {MODULES.map((m, i) => (
-            <span key={m.title} className="whitespace-nowrap">
-              {m.title}
-              {i < MODULES.length - 1 && <span className="ml-3 text-orange-400">•</span>}
-            </span>
-          ))}
-        </p>
+      {/* ================= MARQUEE BANDS ================= */}
+      <div className="relative py-14 overflow-hidden bg-[#f1ebe1]" aria-hidden="true">
+        <div className="rotate-[2deg] scale-[1.04] bg-orange-500 py-3.5">
+          <MarqueeRow reverse className="text-[#0c1e5b]" star="text-white" />
+        </div>
+        <div className="-rotate-[2deg] scale-[1.04] bg-[#0c1e5b] py-4 -mt-10 shadow-[0_20px_50px_-20px_rgba(12,30,91,0.6)]">
+          <MarqueeRow className="text-white" star="text-orange-500" />
+        </div>
       </div>
 
-      {/* Features */}
-      <section id="features" className="scroll-mt-24 bg-white py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="text-center">
-            <Eyebrow>Revolutionize Your Workflow</Eyebrow>
-            <h2 className="mt-2 text-3xl font-bold text-navy sm:text-4xl">Transformative AI Testing</h2>
+      {/* =================>> FEATURES<< ================= */}
+      <section id="features" className="relative bg-[#f1ebe1] py-20 md:py-28 px-4 md:px-12">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="text-center mb-14 md:mb-20">
+            <Reveal>
+              <p className="lp-eyebrow text-orange-600 mb-6">Revolutionize Your Workflow</p>
+            </Reveal>
+            <RevealLines
+              className={`${H2} text-[#0c1e5b]`}
+              lines={["Transformative", "AI Testing"]}
+            />
           </div>
-          <div className="mt-10 grid overflow-hidden rounded-3xl border border-gray-200 shadow-sm md:grid-cols-2">
-            <div className="bg-navy p-8 text-white">
-              <ul className="space-y-3">
-                {MODULES.map(({ icon: Icon, title }) => (
-                  <li key={title} className="flex items-center gap-3">
-                    <Icon size={18} className="flex-none text-orange-400" />
-                    <span>{title}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex flex-col justify-center bg-white p-8">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-orange-500">
-                <Zap size={24} />
-              </div>
-              <h3 className="mt-5 text-2xl font-bold text-navy">
-                Intelligent <span className="text-orange-500">Automation</span>
-              </h3>
-              <p className="mt-3 text-gray-600">
-                AI powered prioritization, test generation, and self-healing workflows accelerate
-                your release cycle.
-              </p>
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="mt-6 self-start rounded-full bg-navy px-6 py-3 font-semibold text-white hover:bg-navy/90"
-              >
-                Start your journey
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Testing suite */}
-      <section id="testing-suite" className="scroll-mt-24 bg-gray-50 py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="grid gap-6 lg:grid-cols-2 lg:items-end">
-            <div>
-              <Eyebrow>Features</Eyebrow>
-              <h2 className="mt-2 text-3xl font-bold text-navy sm:text-4xl">
-                One Platform, <span className="text-orange-500">Every Kind of Testing</span>
-              </h2>
-            </div>
-            <p className="text-gray-600">
-              From requirements to production code, AI agents cover web, mobile, API, database,
-              security and performance testing. Bring your own OpenAI or Anthropic key.
-            </p>
-          </div>
-          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {MODULES.map((m) => (
-              <FeatureCard key={m.title} {...m} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Capabilities */}
-      <section id="about" className="scroll-mt-24 bg-orange-500 py-20 text-white">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-3">
-          <div className="lg:sticky lg:top-28 lg:self-start">
-            <Eyebrow className="text-white/80">Capabilities</Eyebrow>
-            <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
-              Unlock the Power of <span className="text-navy">Autonomous Testing</span>
-            </h2>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:col-span-2">
-            {CAPABILITIES.map(({ icon: Icon, title, description, wide }) => (
-              <div
-                key={title}
-                className={`rounded-2xl bg-white p-6 text-gray-800 shadow-sm ${wide ? "sm:col-span-2" : ""}`}
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-navy text-white">
-                  <Icon size={20} />
+          <Reveal y={60}>
+            <div ref={featRef} className="relative rounded-[32px] bg-[#f8f4ed] border border-[#0c1e5b]/10 p-3 md:p-9 shadow-[0_40px_80px_-50px_rgba(12,30,91,0.45)]">
+              <PlusCorners inset={22} className="text-[#0c1e5b]/50 hidden md:block" />
+              <div className="grid md:grid-cols-2 border border-dashed border-[#0c1e5b]/20 rounded-[20px] md:rounded-none overflow-hidden">
+                <div className="relative bg-[#0c1e5b] min-h-[300px] md:min-h-[460px] overflow-hidden flex items-center justify-center">
+                  <div className="absolute inset-0 lp-dot-grid-dark lp-drift" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_55%,rgba(249,115,22,0.35),transparent_60%)]" />
+                  <motion.div style={{ y: imgY }} className="relative w-[92%] py-8">
+                    <ProductConsole modules={testingSuite} />
+                  </motion.div>
                 </div>
-                <h3 className="mt-4 text-lg font-semibold text-navy">{title}</h3>
-                <p className="mt-2 text-sm text-gray-600">{description}</p>
+
+                <div className="relative flex flex-col justify-center p-8 md:p-14 border-t md:border-t-0 md:border-l border-dashed border-[#0c1e5b]/20">
+                  <Zap className="text-orange-500 mb-6" size={28} />
+                  <h3 className="lp-heading text-3xl md:text-5xl font-semibold mb-6 text-[#0c1e5b] leading-[1.05]">
+                    Intelligent <span className="text-orange-500">Automation</span>
+                  </h3>
+
+                  <p className="text-[#0c1e5b]/70 mb-10 text-base md:text-lg leading-relaxed max-w-md">
+                    AI powered prioritization, test generation, and self-healing
+                    workflows accelerate your release cycle.
+                  </p>
+
+                  <div>
+                    <button onClick={() => navigate("/login")} className="lp-btn lp-btn-navy text-white">
+                      Start your journey
+                      <ArrowUpRight size={16} />
+                    </button>
+                  </div>
+                </div>
               </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* =================> TESTING SUITE <<================= */}
+      <section id="testing-suite" className="relative bg-[#e3e8f3] py-20 md:py-28 px-4 md:px-12 overflow-hidden">
+        <div className="absolute inset-0 lp-line-grid [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
+        <div className="relative max-w-[1400px] mx-auto">
+          <div className="grid lg:grid-cols-12 gap-8 items-end mb-14 md:mb-20">
+            <div className="lg:col-span-8">
+              <Reveal>
+                <p className="lp-eyebrow text-orange-600 mb-6">Features</p>
+              </Reveal>
+              <RevealLines
+                className={`${H2} text-[#0c1e5b]`}
+                lines={["One Platform,", <span className="text-orange-500">Every Kind of Testing</span>]}
+              />
+            </div>
+            <Reveal delay={0.2} className="lg:col-span-4">
+              <p className="text-[#0c1e5b]/70 leading-relaxed text-base md:text-lg">
+                From requirements to production code, AI agents cover web, mobile,
+                API, database, security and performance testing. Bring your own
+                OpenAI or Anthropic key.
+              </p>
+            </Reveal>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+            {testingSuite.map((feature, i) => (
+              <FeatureCard key={feature.title} index={i} {...feature} />
             ))}
           </div>
         </div>
       </section>
 
-      <Pricing />
-      <OurClients />
-      <ContactSection />
-      <Footer />
+      {/* =================> CAPABILITIES <<================= */}
+      <section id="about" className="relative py-20 md:py-28 px-4 md:px-12 overflow-clip bg-gradient-to-br from-[#f0640f] via-[#ea5d0c] to-[#d9520a] lp-grain">
+        <div className="absolute inset-0 lp-dot-grid-light lp-drift opacity-60" />
+        <div className="absolute -right-40 -top-40 w-[640px] h-[640px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.35),transparent_65%)]" />
+        <div className="absolute -left-40 bottom-[-30%] w-[700px] h-[700px] rounded-full bg-[radial-gradient(circle,rgba(12,30,91,0.35),transparent_65%)]" />
+
+        <div className="relative max-w-[1400px] mx-auto grid lg:grid-cols-12 gap-12">
+          <div className="lg:col-span-5">
+            <div className="lg:sticky lg:top-32">
+              <Reveal>
+                <p className="lp-eyebrow text-white mb-6">Capabilities</p>
+              </Reveal>
+              <RevealLines
+                className={`${H2} text-white`}
+                fade={false}
+                lines={["Unlock the", "Power of", <span className="text-[#0c1e5b]">Autonomous</span>, <span className="text-[#0c1e5b]">Testing</span>]}
+              />
+              <OrbitMotif />
+            </div>
+          </div>
+
+          <div className="lg:col-span-7 grid sm:grid-cols-2 gap-4 md:gap-5">
+            {capabilities.map((c, i) => (
+              <Card key={c.title} index={i} {...c} className={c.wide ? "sm:col-span-2" : ""} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================= Plan Pricing  ================= */}
+      <section id="pricing">
+        <PricingCTA />
+      </section>
+
+      {/* ================= Our Clients ================= */}
+      <section id="clients">
+        <OurClients />
+      </section>
+
+      {/* ================= CONTACT ================= */}
+      <section id="contact">
+        <ContactPage />
+      </section>
+
+      {/* ================= >>FOOTER <<================= */}
+      <LandingFooter />
+
       <HelpWidget />
     </div>
   );
-}
+};
+
+const MarqueeRow = ({ reverse = false, className = "", star = "" }) => {
+  const items = [...testingSuite, ...testingSuite];
+  return (
+    <div className="flex overflow-hidden whitespace-nowrap">
+      <div className={`flex shrink-0 items-center lp-marquee-track ${reverse ? "reverse" : ""}`}>
+        {[0, 1].map((k) => (
+          <div key={k} className="flex shrink-0 items-center">
+            {items.map((f, i) => (
+              <span key={`${k}-${i}`} className={`flex items-center lp-heading uppercase font-semibold text-xl md:text-3xl px-6 md:px-8 ${className}`}>
+                {f.title}
+                <Sparkle className={`w-4 h-4 md:w-5 md:h-5 ml-12 md:ml-16 ${star}`} />
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const OrbitMotif = () => (
+  <div className="hidden lg:block relative mt-14 w-64 h-64" aria-hidden="true">
+    <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
+      <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeDasharray="0.1 6" strokeLinecap="round" />
+      <circle cx="100" cy="100" r="62" fill="none" stroke="rgba(12,30,91,0.5)" strokeWidth="1.5" strokeDasharray="0.1 5" strokeLinecap="round" />
+      <circle cx="100" cy="100" r="34" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeDasharray="0.1 4" strokeLinecap="round" />
+      <g>
+        <circle cx="100" cy="10" r="6" fill="#fff" />
+        <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="12s" repeatCount="indefinite" />
+      </g>
+      <g>
+        <circle cx="100" cy="38" r="5" fill="#0c1e5b" />
+        <animateTransform attributeName="transform" type="rotate" from="360 100 100" to="0 100 100" dur="8s" repeatCount="indefinite" />
+      </g>
+      <g>
+        <circle cx="134" cy="100" r="4" fill="#fff" />
+        <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="5s" repeatCount="indefinite" />
+      </g>
+      <circle cx="100" cy="100" r="12" fill="#0c1e5b">
+        <animate attributeName="r" values="10;14;10" dur="2.4s" repeatCount="indefinite" />
+      </circle>
+    </svg>
+  </div>
+);
+
+const Card = ({ icon, title, description, className = "", index = 0 }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 40 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-40px" }}
+    transition={{ duration: 0.8, delay: (index % 2) * 0.1, ease: EASE }}
+    className={`group relative bg-[#f8f4ed] hover:bg-[#0c1e5b] p-7 md:p-8 rounded-[24px] overflow-hidden transition-colors duration-500 shadow-[0_20px_50px_-30px_rgba(12,30,91,0.6)] ${className}`}
+  >
+    <span className="absolute -right-16 -bottom-16 w-48 h-48 rounded-full bg-orange-500/0 group-hover:bg-orange-500/25 blur-2xl transition-colors duration-700" />
+    <div className="relative flex items-start justify-between mb-10">
+      <div className="w-12 h-12 rounded-2xl bg-[#0c1e5b] group-hover:bg-orange-500 text-orange-400 group-hover:text-white flex items-center justify-center transition-colors duration-500 [&>svg]:w-5 [&>svg]:h-5">
+        {icon}
+      </div>
+      <span className="lp-mono text-xs text-[#0c1e5b]/40 group-hover:text-orange-400 transition-colors">
+        {String(index + 1).padStart(2, "0")}
+      </span>
+    </div>
+
+    <h4 className="relative lp-heading text-xl font-semibold mb-2 text-[#0c1e5b] group-hover:text-white transition-colors duration-500">{title}</h4>
+
+    <p className="relative text-[#0c1e5b]/65 group-hover:text-white/70 text-sm leading-relaxed transition-colors duration-500">{description}</p>
+  </motion.div>
+);
+
+const FeatureCard = ({ icon, title, description, points, index = 0, wide = false }) => (
+  <motion.article
+    initial={{ opacity: 0, y: 60 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-40px" }}
+    transition={{ duration: 0.9, delay: (index % 3) * 0.12, ease: EASE }}
+    whileHover={{ y: -8 }}
+    className={`group relative bg-[#f8f4ed] p-2.5 rounded-[28px] border border-[#0c1e5b]/10 shadow-[0_24px_60px_-40px_rgba(12,30,91,0.55)] hover:shadow-[0_40px_80px_-40px_rgba(12,30,91,0.6)] transition-shadow duration-500 h-full flex flex-col ${wide ? "lg:col-span-3 lg:flex-row" : ""}`}
+  >
+    <div className={`relative h-48 md:h-52 rounded-[20px] bg-[#0c1e5b] overflow-hidden ${wide ? "lg:h-auto lg:min-h-[300px] lg:w-[42%] lg:shrink-0" : ""}`}>
+      <div className="absolute inset-0 lp-visual transition-transform duration-700 ease-out group-hover:scale-[1.06]">
+        <ModuleVisual title={title} />
+      </div>
+      <div className="lp-brackets absolute inset-3 text-orange-400/0 group-hover:text-orange-400/80 transition-colors duration-500 pointer-events-none">
+        <Brackets />
+      </div>
+      <span className="absolute top-4 left-4 lp-mono text-[11px] text-white/55">
+        {String(index + 1).padStart(2, "0")} / {String(testingSuite.length).padStart(2, "0")}
+      </span>
+      <div className="absolute top-3 right-3 w-10 h-10 rounded-xl bg-white/10 backdrop-blur text-orange-400 group-hover:bg-orange-500 group-hover:text-white flex items-center justify-center transition-colors duration-500 [&>svg]:w-[18px] [&>svg]:h-[18px]">
+        {icon}
+      </div>
+    </div>
+
+    <div className={`p-5 md:p-6 flex-1 flex flex-col ${wide ? "lg:px-10 lg:py-8" : ""}`}>
+      <h4 className="lp-heading text-xl md:text-[22px] font-semibold mb-2 text-[#0c1e5b] flex items-center gap-2">
+        {title}
+        <ArrowUpRight size={18} className="text-orange-500 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+      </h4>
+
+      <p className="text-[#0c1e5b]/70 text-sm leading-relaxed mb-5">{description}</p>
+
+      <ul className="space-y-2.5 pt-5 mt-auto border-t border-dashed border-[#0c1e5b]/15">
+        {points.map((point) => (
+          <li key={point} className="flex gap-3 text-[13px] text-[#0c1e5b]/65 leading-snug">
+            <span className="w-1.5 h-1.5 mt-[7px] shrink-0 bg-orange-500 rotate-45" />
+            <span>{point}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </motion.article>
+);
+
+export default Home;

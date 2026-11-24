@@ -1,38 +1,294 @@
-import { useEffect } from "react";
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import Home from "./pages/Home";
-import Login from "./pages/AuthFlow/Login";
-import ComingSoon from "./pages/ComingSoon";
-import { getUserDetails } from "./services/operations/authAPIs";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useSelector } from "react-redux"; // Added Redux hook
+import { useEffect, useState, lazy, Suspense } from "react"; // Added useState
+import { HelpCircle, X, Copy, Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import AppHeader from "./components/Layout/AppHeader.jsx";
+import Sidebar from "./components/Layout/Sidebar.jsx";
+import Home from "./pages/Home.jsx";
+import Login from "./pages/AuthFlow/Login.jsx";
 
-function ProtectedRoute({ children }) {
-  const { token } = useSelector((state) => state.auth);
-  if (token || localStorage.getItem("token")) return children;
-  return <Navigate to="/" replace />;
-}
+import ForgotPassword from "./pages/AuthFlow/ForgotPassword.jsx";
+import UpdatePassword from "./pages/AuthFlow/UpdatePassword.jsx";
 
-function OpenRoute({ children }) {
-  const { token } = useSelector((state) => state.auth);
-  if (!token && !localStorage.getItem("token")) return children;
-  return <Navigate to="/coming-soon" replace />;
-}
+import socket from "./utils/socket.js";
+import useCreditSocket from "./hooks/useCreditSocket";
+import { logout } from "./services/operations/authAPIs.js";
+import { useDispatch } from "react-redux";
+import { getUserDetails } from "./services/operations/authAPIs.js";
+import Footer from "./components/UI/Footer.jsx";
 
-function App() {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { user } = useSelector((state) => state.profile);
+// Logged-in pages load on first visit, keeping them (and recharts, jszip, …)
+// out of the bundle that the landing and login pages download.
+const MainDashboard = lazy(() => import("./pages/Dashboard/MainDashboard.jsx"));
+const Profile = lazy(() => import("./pages/Settings/Profile.jsx"));
+const ChangePassword = lazy(() => import("./pages/Settings/ChangePassword.jsx"));
+const AutoPilot = lazy(() => import("./pages/Dashboard/WebTesting.jsx"));
+const APITesting = lazy(() => import("./pages/Dashboard/APITesting.jsx"));
+const MobileAppTesting = lazy(() => import("./pages/Dashboard/MobileAppTesting.jsx"));
+const DBTesting = lazy(() => import("./pages/Dashboard/DBTesting"));
+const TestCaseDesigner = lazy(() => import("./pages/Dashboard/TestCaseDesigner.jsx"));
+const Projects = lazy(() => import("./pages/Dashboard/Projects.jsx"));
+const SuperAdmin = lazy(() => import("./pages/Dashboard/SuperAdmin/SuperAdmin.jsx"));
+const UsersManagement = lazy(() => import("./components/Dashboard/SuperAdmin/UsersManagement.jsx"));
+const UsersAddForm = lazy(() => import("./components/Dashboard/SuperAdmin/AddUsersForm.jsx"));
+const SubscriptionManagement = lazy(() => import("./components/Dashboard/SuperAdmin/SubscriptionManagement.jsx"));
+const AddCompanyPage = lazy(() => import("./components/Dashboard/SuperAdmin/AddCompanyPage.jsx"));
+const CompanyManagement = lazy(() => import("./components/Dashboard/SuperAdmin/CompanyManagement.jsx"));
+const CompanyDetails = lazy(() => import("./components/Dashboard/SuperAdmin/CompanyDetails.jsx"));
+const CompanyAdminDashboard = lazy(() => import("./pages/Dashboard/CompanyAdmin/CompanyAdminDashboard.jsx"));
+const CompanyStaffManagement = lazy(() => import("./components/Dashboard/CompanyAdmin/CompanyStaffManagement.jsx"));
+const AddStaff = lazy(() => import("./components/Dashboard/CompanyAdmin/AddStaff.jsx"));
+const CompanySubscription = lazy(() => import("./components/Dashboard/CompanyAdmin/CompanySubscription.jsx"));
+const UpgradePlan = lazy(() => import("./components/Dashboard/UpgradePlan.jsx"));
+const RegressionTesting = lazy(() => import("./pages/Dashboard/RegressionTesting.jsx"));
+const PerfTesting = lazy(() => import("./pages/Dashboard/PerfTesting/index.jsx"));
+const GitHubTesting = lazy(() => import("./pages/Dashboard/GitHubTesting/index.jsx"));
+const SecurityTesting = lazy(() => import("./pages/Dashboard/SecurityTesting.jsx"));
 
-  useEffect(() => {
-    if (localStorage.getItem("token") && !user) {
-      dispatch(getUserDetails(navigate));
-    }
-    // Only run on mount: restores the session after a refresh.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+const PageLoading = () => (
+  <div className="flex h-full min-h-[40vh] items-center justify-center text-blue-900 font-semibold">
+    Loading...
+  </div>
+);
+
+// --- SUPPORT BUTTON COMPONENT ---
+const SupportButton = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [copied, setCopied] = useState(false); // State for copy feedback
+
+  const handleCopyEmail = () => {
+    navigator.clipboard.writeText("support@adventglobal.com");
+    setCopied(true);
+    // Reset the copy icon back after 2 seconds
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
 
   return (
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-8 right-8 bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white p-4 rounded-full shadow-2xl shadow-orange-500/30 transition-transform hover:scale-110 z-[9999] flex items-center justify-center border-4 border-white"
+        aria-label="Support"
+      >
+        <HelpCircle size={28} />
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+            
+            {/* Modal Header */}
+            <div className="bg-slate-50 p-4 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <HelpCircle className="text-orange-500" size={20} />
+                Need Help?
+              </h3>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-slate-400 hover:text-slate-700 bg-slate-200/50 hover:bg-slate-200 p-1.5 rounded-full transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-8 text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mb-2">
+                <HelpCircle size={32} />
+              </div>
+              <h4 className="text-xl font-bold text-slate-800">Any Query?</h4>
+              <p className="text-slate-500 text-sm">
+                If you have any questions or need assistance, feel free to drop us an email. Our team will get back to you shortly.
+              </p>
+              
+              {/* Email & Copy Button Wrapper */}
+              <div className="pt-4 pb-2 flex justify-center">
+                <div className="inline-flex items-center bg-orange-50 border border-orange-200 rounded-xl overflow-hidden shadow-sm">
+                  
+                  {/* Mailto Link */}
+                  <a
+                    href="mailto:support@adventglobal.com"
+                    className="px-5 py-3 text-orange-600 font-bold hover:bg-orange-100 transition-colors"
+                  >
+                    support@adventglobal.com
+                  </a>
+                  
+                  {/* Vertical Divider */}
+                  <div className="w-[1px] h-8 bg-orange-200"></div>
+                  
+                  {/* Copy Button */}
+                  <button
+                    onClick={handleCopyEmail}
+                    className="px-4 py-3 hover:bg-orange-100 transition-colors flex items-center justify-center group bg-white/50"
+                    title="Copy to clipboard"
+                  >
+                    {copied ? (
+                      <Check size={18} className="text-emerald-500" />
+                    ) : (
+                      <Copy size={18} className="text-orange-500 group-hover:text-orange-700 transition-colors" />
+                    )}
+                  </button>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+// Layout for Dashboard pages ONLY
+// Floating-panel shell: navy sidebar card + header card on a soft canvas.
+// Only <main> scrolls, so there is a single scrollbar.
+const DashboardLayout = ({ children }) => (
+  <div className="app-canvas flex h-screen gap-4 overflow-hidden p-4">
+    <Sidebar />
+    <div className="flex min-w-0 flex-1 flex-col gap-4">
+      <AppHeader variant="shell" />
+      <main className="flex-1 overflow-y-auto rounded-3xl">
+        <Suspense fallback={<PageLoading />}>{children}</Suspense>
+      </main>
+    </div>
+    <SupportButton/>
+  </div>
+);
+
+// Protected Route helper
+const ProtectedRoute = ({ children }) => {
+  // Grab the token from Redux state
+  const { token } = useSelector((state) => state.auth);
+  // Fallback to localStorage in case Redux hasn't rehydrated yet after a page refresh
+  const localToken = localStorage.getItem("token");
+
+  // If user is logged in, allow access to the route
+  if (token !== null || localToken !== null) {
+    return children;
+  }
+
+  // If no user is logged in, redirect to the home page (or login page)
+  return <Navigate to="/" replace />;
+};
+
+// Optional: Open Route helper to prevent logged-in users from seeing Auth pages
+const OpenRoute = ({ children }) => {
+  const { token } = useSelector((state) => state.auth);
+  const localToken = localStorage.getItem("token");
+
+  if (token === null && localToken === null) {
+    return children;
+  }
+
+  // If user is ALREADY logged in, redirect them to the dashboard
+  return <Navigate to="/dashboard" replace />;
+};
+
+// Admin Route helper ---
+const CompanyAdminRoute = ({ children }) => {
+  const { user } = useSelector((state) => state.profile);
+  const hasToken = localStorage.getItem("token");
+
+  const currentRole = user?.role;
+
+  // 1. If we don't have user data yet, but a token exists, we are likely still fetching the profile.
+  // Show a loading state instead of immediately kicking them out.
+  if (!user && hasToken) {
+    return (
+      <div className="flex h-screen items-center justify-center text-blue-900 font-semibold">
+        Loading...
+      </div>
+    );
+  }
+
+  // 2. Once the user data is loaded, check if they are an Admin.
+  if (currentRole === "company_admin") {
+    return children;
+  }
+
+  // 3. If they are completely loaded and NOT an Admin, redirect them.
+  return <Navigate to="/dashboard" replace />;
+};
+
+//super admin
+const SuperAdminRoute = ({ children }) => {
+  const { user } = useSelector((state) => state.profile);
+  const hasToken = localStorage.getItem("token");
+
+  const currentRole = user?.role;
+
+  // 1. If we don't have user data yet, but a token exists, we are likely still fetching the profile.
+  // Show a loading state instead of immediately kicking them out.
+  if (!user && hasToken) {
+    return (
+      <div className="flex h-screen items-center justify-center text-blue-900 font-semibold">
+        Loading...
+      </div>
+    );
+  }
+
+  // 2. Once the user data is loaded, check if they are an Admin.
+  if (currentRole === "super_admin") {
+    return children;
+  }
+
+  // 3. If they are completely loaded and NOT an Admin, redirect them.
+  return <Navigate to="/dashboard" replace />;
+};
+
+// Layout for Admin pages to keep the Footer at the bottom
+const AdminLayout = ({ children }) => (
+  <div className="app-canvas flex flex-col min-h-screen">
+    <AppHeader />
+    {/* flex-grow pushes the footer to the bottom, pb-6 adds breathing room */}
+    <main className="flex-grow pb-6">
+      <Suspense fallback={<PageLoading />}>{children}</Suspense>
+    </main>
+    <Footer />
+    <SupportButton/>
+  </div>
+);
+
+function App() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const { user } = useSelector((state) => state.profile);
+  const localToken = localStorage.getItem("token");
+
+  useEffect(() => {
+    if (localToken && !user) {
+      dispatch(getUserDetails(localToken, navigate));
+    }
+  }, [dispatch, localToken, user, navigate]);
+
+  useEffect(() => {
+    const handleForceLogout = () => {
+      dispatch(logout(navigate));
+
+      alert("Logged in from another device");
+    };
+
+    socket.on("forceLogout", handleForceLogout);
+
+    return () => {
+      socket.off("forceLogout", handleForceLogout);
+    };
+  }, [dispatch, navigate]);
+
+  // Live credit balance, app-wide. Mounted here (once) so the header, the run
+  // guard and the usage meter never disagree — including when a teammate's run
+  // is what moved the balance.
+  useCreditSocket();
+
+  return (
+    <Suspense fallback={<PageLoading />}>
     <Routes>
+      {/* --- PUBLIC ROUTES --- */}
       <Route
         path="/"
         element={
@@ -41,6 +297,8 @@ function App() {
           </OpenRoute>
         }
       />
+
+      {/* Public auth pages */}
       <Route
         path="/login"
         element={
@@ -49,16 +307,339 @@ function App() {
           </OpenRoute>
         }
       />
+
       <Route
-        path="/coming-soon"
+        path="/forgot-password"
+        element={
+          <OpenRoute>
+            <ForgotPassword />
+          </OpenRoute>
+        }
+      />
+      <Route
+        path="/update-password/:token"
+        element={
+          <OpenRoute>
+            <UpdatePassword />
+          </OpenRoute>
+        }
+      />
+
+      {/* Super Admin */}
+
+      <Route
+        path="/dashboard/super-admin"
         element={
           <ProtectedRoute>
-            <ComingSoon />
+            <SuperAdminRoute>
+              <AdminLayout>
+                <SuperAdmin />
+              </AdminLayout>
+            </SuperAdminRoute>
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/dashboard/super-admin/users-management"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <AdminLayout>
+                <UsersManagement />
+              </AdminLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/super-admin/users-management/add-users"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <AdminLayout>
+                <UsersAddForm />
+              </AdminLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/super-admin/subscriptions"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <AdminLayout>
+                <SubscriptionManagement />
+              </AdminLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/super-admin/companies-management"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <AdminLayout>
+                <CompanyManagement />
+              </AdminLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/super-admin/companies-management/add-company"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <AdminLayout>
+                <AddCompanyPage />
+              </AdminLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/super-admin/companies-management/:id"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <AdminLayout>
+                <CompanyDetails />
+              </AdminLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- PRIVATE ROUTES: Dashboard and Testing --- */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <MainDashboard />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* web testing page */}
+      <Route
+        path="/web-testing"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <AutoPilot />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Regression Testing */}
+      <Route
+        path="/regression-testing"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <RegressionTesting />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- /db-testing Route --- */}
+      <Route
+        path="/db-testing"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <DBTesting />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- /performance-testing Route --- */}
+      <Route
+        path="/performance-testing"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <PerfTesting />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- /github-testing Route --- */}
+      <Route
+        path="/github-testing"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <GitHubTesting />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- /mobile-testing Route --- */}
+      <Route
+        path="/mobile-testing"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <MobileAppTesting />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- /api-testing Route --- */}
+      <Route
+        path="/api-testing"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <APITesting />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- /security-testing Route --- */}
+      <Route
+        path="/security-testing"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <SecurityTesting />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- /test-case-designer Route --- */}
+      <Route
+        path="/test-case-designer"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <TestCaseDesigner />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- /projects Route --- */}
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Projects />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- Profile Route --- */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Profile />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- Change Password Route --- */}
+      <Route
+        path="/change-password"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ChangePassword />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/upgrade-plan"
+        element={
+          <ProtectedRoute>
+            <AppHeader />
+            <UpgradePlan />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* --- Admin Route --- */}
+      <Route
+        path="/organization-admin-dashboard"
+        element={
+          <ProtectedRoute>
+            <CompanyAdminRoute>
+              <AdminLayout>
+                <CompanyAdminDashboard />
+              </AdminLayout>
+            </CompanyAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/organization-admin-dashboard/staff-management"
+        element={
+          <ProtectedRoute>
+            <CompanyAdminRoute>
+              <AdminLayout>
+                {" "}
+                <CompanyStaffManagement />
+              </AdminLayout>
+            </CompanyAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/organization-admin-dashboard/staff-management/add-staff"
+        element={
+          <ProtectedRoute>
+            <CompanyAdminRoute>
+              <AdminLayout>
+                <AddStaff />
+              </AdminLayout>
+            </CompanyAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/organization-admin-dashboard/organization-profile"
+        element={
+          <ProtectedRoute>
+            <CompanyAdminRoute>
+              <AdminLayout>
+                <CompanySubscription />
+              </AdminLayout>
+            </CompanyAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Catch-all route for undefined URLs */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }
 

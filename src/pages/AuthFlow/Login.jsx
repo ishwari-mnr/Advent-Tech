@@ -1,142 +1,155 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
-import toast from "react-hot-toast";
-import { SITE } from "../../config/site";
-import { USE_MOCK } from "../../services/api";
-import { login } from "../../services/operations/authAPIs";
-import HelpWidget from "../../components/Landing/HelpWidget";
+import { useDispatch, useSelector } from "react-redux"; // Added Redux hooks
+import { login } from "../../services/operations/authAPIs"; // Import your login action
+import AuthShell, { AuthBrand, authLabel, authInput, authSubmit } from "../../components/Landing/AuthShell";
+import { Eye, EyeOff } from "lucide-react";
 
-function isAllowedEmail(email) {
-  const lower = email.trim().toLowerCase();
-  return SITE.allowedEmailDomains.some((domain) => lower.endsWith(`@${domain}`));
-}
 
-export default function Login() {
-  const dispatch = useDispatch();
+const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch(); // Initialize dispatch
+
+  // Get loading state from Redux slice (optional, replaces local loading)
   const { loading } = useSelector((state) => state.auth);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [emailError, setEmailError] = useState("");
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    // If token exists, redirect to dashboard
+    if (token) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
 
-  const onEmailChange = (e) => {
-    const value = e.target.value;
-    setEmail(value);
-    setEmailError(value && !isAllowedEmail(value) ? "This email is not allowed" : "");
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [emailError, setEmailError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const { email, password } = formData;
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (name === "email") {
+      if (
+        value &&
+        !(
+          value.endsWith("@adventglobal.com")
+        )
+      ) {
+        setEmailError(
+          "This email is not allowed",
+        );
+      } else {
+        setEmailError("");
+      }
+    }
   };
 
-  const onSubmit = (e) => {
+  const onLoginSubmit = (e) => {
     e.preventDefault();
     if (emailError) return;
-    dispatch(login(email.trim(), password, navigate));
+
+    // Dispatch the Redux action
+    // It handles the API call, Toast, and Navigation internally
+    dispatch(login(email, password, navigate));
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="text-xl font-bold text-navy">
-            {SITE.brand}
-          </Link>
-          <button
-            type="button"
-            aria-label="Back to home"
-            onClick={() => navigate("/")}
-            className="rounded-full p-2 text-gray-600 hover:bg-gray-100"
-          >
-            <ArrowLeft size={20} />
-          </button>
-        </div>
-      </div>
+    <AuthShell>
+      <AuthBrand subtitle="Sign in to your account" />
 
-      <div className="flex items-center justify-center px-4 py-16">
-        <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-          <h1 className="text-center text-3xl font-bold text-navy">{SITE.brand}</h1>
-          <p className="mt-1 text-center text-sm text-gray-500">Sign in to your account</p>
+      <form onSubmit={onLoginSubmit} className="space-y-6">
+        {/* EMAIL */}
+        <div>
+          <label className={authLabel}>
+            Email Address
+          </label>
 
-          <form onSubmit={onSubmit} className="mt-8 space-y-5">
-            <div>
-              <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="name@adventglobal.com"
-                value={email}
-                onChange={onEmailChange}
-                className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-500 ${
-                  emailError ? "border-red-400" : "border-gray-300"
-                }`}
-              />
-              {emailError && <p className="mt-1 text-xs text-red-600">{emailError}</p>}
-            </div>
+          <input
+            name="email"
+            type="email"
+            required
+            value={email}
+            onChange={handleChange}
+            className={authInput(emailError)}
+            placeholder="name@adventglobal.com"
+          />
 
-            <div>
-              <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-orange-500"
-                />
-                <button
-                  type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              <div className="mt-2 text-right">
-                <button
-                  type="button"
-                  onClick={() =>
-                    toast("Please contact your system administrator to reset your password.")
-                  }
-                  className="text-sm font-medium text-orange-600 hover:underline"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || !!emailError}
-              className="w-full rounded-lg bg-navy px-4 py-2.5 font-semibold text-white hover:bg-navy/90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? "Signing In..." : "Sign In"}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Need access?{" "}
-            <span className="font-semibold text-navy">Please contact your system administrator.</span>
-          </p>
-          {USE_MOCK && (
-            <p className="mt-3 text-center text-xs text-gray-400">
-              Demo: demo@adventglobal.com / Demo@123
+          {emailError && (
+            <p className="text-red-500 text-xs mt-1.5 font-medium">
+              {emailError}
             </p>
           )}
         </div>
-      </div>
 
-      <HelpWidget />
-    </div>
+        {/* PASSWORD */}
+        <div>
+          <label className={authLabel}>
+            Password
+          </label>
+
+          <div className="relative">
+            <input
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              value={password}
+              onChange={handleChange}
+              className={`${authInput(false)} !pr-12`}
+              placeholder="••••••••"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[#0c1e5b]/40 hover:text-orange-500 transition-colors"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          <div className="flex justify-end mt-2.5">
+            <Link
+              to="/forgot-password"
+              className="text-xs font-semibold text-[#0c1e5b]/60 hover:text-orange-500 transition-colors"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || emailError}
+          className={authSubmit}
+        >
+          {loading ? "Signing In..." : "Sign In"}
+        </button>
+      </form>
+
+      {/* <p className="mt-8 text-center text-sm text-gray-500">
+        New here?
+        <Link
+          to="/signup"
+          className="text-orange-500 font-bold hover:underline ml-1"
+        >
+          Create an account
+        </Link>
+      </p> */}
+
+      <p className="mt-8 pt-6 border-t border-dashed border-[#0c1e5b]/15 text-center text-sm text-[#0c1e5b]/60">
+        Need access?{" "}
+        <span className="text-[#0c1e5b] font-semibold">
+          Please contact your system administrator.
+        </span>
+      </p>
+    </AuthShell>
   );
-}
+};
+
+export default Login;

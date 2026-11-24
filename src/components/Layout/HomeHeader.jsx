@@ -1,27 +1,16 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, User, X } from "lucide-react";
-import { SITE } from "../../config/site";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { User, ArrowUpRight, Menu, X } from "lucide-react";
+import logo from "../../assets/ADVENT_AT.png";
 
-const NAV_ITEMS = [
-  { label: "Home", id: "home" },
-  { label: "Features", id: "features" },
-  { label: "About", id: "about" },
-  { label: "Contact", id: "contact" },
-  { label: "Pricing", id: "pricing" },
-  { label: "Our Clients", id: "clients" },
-];
+const NAV_ITEMS = ["Home", "Features", "About", "Contact", "Pricing", "Our Clients"];
 
-export function scrollToSection(id) {
-  const el = document.getElementById(id);
-  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-export default function HomeHeader() {
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const location = useLocation();
+const HomeHeader = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -30,73 +19,108 @@ export default function HomeHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const goTo = (id) => {
-    setMenuOpen(false);
+  const handleScroll = (id) => {
+    setOpen(false);
     if (location.pathname !== "/") {
       navigate("/");
-      setTimeout(() => scrollToSection(id), 100);
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) element.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     } else {
-      scrollToSection(id);
+      const element = document.getElementById(id);
+      if (element) element.scrollIntoView({ behavior: "smooth" });
     }
   };
 
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-40 transition-colors ${
-        scrolled || menuOpen ? "bg-white shadow-md" : "bg-white/80 backdrop-blur"
-      }`}
+    <motion.header
+      initial={{ y: -40, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }}
+      className="fixed top-0 inset-x-0 z-50 px-3 md:px-6 pt-3"
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="text-xl font-bold text-navy">
-          {SITE.brand}
+      <nav
+        className={`lp-brackets text-[#0c1e5b]/40 max-w-[1400px] mx-auto flex items-center justify-between transition-all duration-500 border ${
+          scrolled
+            ? "bg-[#f8f4ed]/85 backdrop-blur-xl border-[#0c1e5b]/10 shadow-[0_10px_40px_-20px_rgba(12,30,91,0.35)] px-4 md:px-6 py-2.5"
+            : "bg-[#f8f4ed]/40 backdrop-blur-md border-transparent px-4 md:px-8 py-4"
+        }`}
+      >
+        <span className="lp-bk tl" />
+        <span className="lp-bk tr" />
+        <span className="lp-bk bl" />
+        <span className="lp-bk br" />
+
+        {/* Brand Logo */}
+        <Link to="/" className="flex items-center shrink-0">
+          <img
+            src={logo}
+            alt="Advent AT"
+            className={`w-auto object-contain mix-blend-multiply transition-all duration-500 ${scrolled ? "h-9" : "h-11"}`}
+          />
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex">
+        {/* Navigation */}
+        <div className="hidden lg:flex items-center gap-1">
           {NAV_ITEMS.map((item) => (
             <button
-              key={item.id}
-              type="button"
-              onClick={() => goTo(item.id)}
-              className="rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-navy"
+              key={item}
+              onClick={() => handleScroll(item.toLowerCase())}
+              className="group relative lp-mono text-[11px] uppercase text-[#0c1e5b]/70 hover:text-[#0c1e5b] px-3.5 py-2 transition-colors flex items-center gap-1"
             >
-              {item.label}
+              {item}
+              <ArrowUpRight
+                size={12}
+                className="text-orange-500 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300"
+              />
+              <span className="absolute left-3.5 right-3.5 bottom-1 h-px bg-orange-500 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
             </button>
           ))}
-        </nav>
+        </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy/90"
-          >
-            <User size={16} />
-            Log in
+          <Link to="/login" className="lp-btn lp-btn-navy !py-3 !px-5 text-white">
+            <User size={14} strokeWidth={2.5} />
+            <span>Log in</span>
           </Link>
           <button
-            type="button"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            onClick={() => setMenuOpen((open) => !open)}
-            className="rounded-md p-2 text-gray-700 hover:bg-gray-100 lg:hidden"
+            onClick={() => setOpen((v) => !v)}
+            className="lg:hidden w-11 h-11 flex items-center justify-center text-[#0c1e5b] border border-[#0c1e5b]/15"
+            aria-label="Menu"
           >
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            {open ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
-      </div>
+      </nav>
 
-      {menuOpen && (
-        <nav className="border-t border-gray-200 bg-white px-4 pb-4 pt-2 lg:hidden">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => goTo(item.id)}
-              className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-navy"
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
-      )}
-    </header>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+            className="lg:hidden max-w-[1400px] mx-auto mt-2 bg-[#0c1e5b] text-white p-3 shadow-2xl"
+          >
+            {NAV_ITEMS.map((item, i) => (
+              <button
+                key={item}
+                onClick={() => handleScroll(item.toLowerCase())}
+                className="w-full flex items-center justify-between px-4 py-3.5 border-b border-white/10 last:border-0 lp-mono text-xs uppercase hover:text-orange-400 transition-colors"
+              >
+                <span className="flex items-center gap-4">
+                  <span className="text-orange-400/80">0{i + 1}</span>
+                  {item}
+                </span>
+                <ArrowUpRight size={14} />
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.header>
   );
-}
+};
+
+export default HomeHeader;
