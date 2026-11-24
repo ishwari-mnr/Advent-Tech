@@ -18,7 +18,7 @@ const HelpWidget = () => {
     // navigator.clipboard is undefined on non-HTTPS origins; don't throw.
     if (!navigator.clipboard?.writeText) return;
     navigator.clipboard
-      .writeText("support@adventglobal.com")
+      .writeText("info@adventglobal.com")
       .then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -83,10 +83,10 @@ const HelpWidget = () => {
 
                 <div className="relative inline-flex items-center bg-white/10 border border-white/15 rounded-xl overflow-hidden max-w-full">
                   <a
-                    href="mailto:support@adventglobal.com"
+                    href="mailto:info@adventglobal.com"
                     className="px-4 py-2.5 text-white font-semibold text-sm hover:bg-white/10 transition-colors truncate"
                   >
-                    support@adventglobal.com
+                    info@adventglobal.com
                   </a>
                   <span className="w-px h-7 bg-white/20" />
                   <button

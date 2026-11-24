@@ -58,7 +58,7 @@ const SupportButton = () => {
   const [copied, setCopied] = useState(false); // State for copy feedback
 
   const handleCopyEmail = () => {
-    navigator.clipboard.writeText("support@adventglobal.com");
+    navigator.clipboard.writeText("info@adventglobal.com");
     setCopied(true);
     // Reset the copy icon back after 2 seconds
     setTimeout(() => {
@@ -110,10 +110,10 @@ const SupportButton = () => {
                   
                   {/* Mailto Link */}
                   <a
-                    href="mailto:support@adventglobal.com"
+                    href="mailto:info@adventglobal.com"
                     className="px-5 py-3 text-orange-600 font-bold hover:bg-orange-100 transition-colors"
                   >
-                    support@adventglobal.com
+                    info@adventglobal.com
                   </a>
                   
                   {/* Vertical Divider */}

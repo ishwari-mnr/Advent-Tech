@@ -25,7 +25,7 @@ const PricingCTA = () => {
   const activePlan = PRICING.planTypes[planType];
 
   const handleCopyEmail = () => {
-    navigator.clipboard.writeText("sales@adventglobal.com");
+    navigator.clipboard.writeText("info@adventglobal.com");
     toast.success("Email copied to clipboard!");
   };
 
@@ -179,7 +179,7 @@ const PricingCTA = () => {
                 <div className="bg-white border border-[#0c1e5b]/10 rounded-2xl p-2 flex items-center justify-between mt-2">
                   <div className="pl-4 pr-2 py-2 overflow-hidden">
                     <span className="text-[#0c1e5b] font-medium text-sm md:text-base truncate block">
-                      sales@adventglobal.com
+                      info@adventglobal.com
                     </span>
                   </div>
                   <button

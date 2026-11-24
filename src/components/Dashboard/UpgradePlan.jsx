@@ -72,7 +72,7 @@ const UpgradePlan = () => {
   const activePlan = PRICING.planTypes[planType];
 
   const handleCopyEmail = () => {
-    navigator.clipboard.writeText("sales@adventglobal.com");
+    navigator.clipboard.writeText("info@adventglobal.com");
     toast.success("Email copied to clipboard!");
   };
 
@@ -651,7 +651,7 @@ const UpgradePlan = () => {
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-2 flex items-center justify-between mt-2">
               <div className="pl-4 pr-2 py-2 overflow-hidden">
                 <span className="text-slate-700 font-bold text-sm md:text-base truncate block">
-                  sales@adventglobal.com
+                  info@adventglobal.com
                 </span>
               </div>
               <button

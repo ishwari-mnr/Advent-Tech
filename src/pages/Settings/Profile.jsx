@@ -122,10 +122,10 @@ return (
         <div className="flex items-center space-x-2">
           <span className="text-sm font-semibold text-slate-700">Email:</span>
           <a 
-            href="mailto:support@adventglobal.com" 
+            href="mailto:info@adventglobal.com" 
             className="text-sm font-bold text-orange-500 hover:text-orange-600 hover:underline transition-all"
           >
-            support@adventglobal.com
+            info@adventglobal.com
           </a>
         </div>
       </div>

@@ -118,19 +118,82 @@ export default function ContactPage({ variant = "section" }) {
 
   const isModal = variant === "modal";
 
+  const linkCls = "hover:text-orange-400 transition-colors";
+
   const infoItems = [
     {
       icon: <MapPin size={20} />,
-      title: "Our Location",
+      title: "Corporate Headquarters",
       body: (
         <>
-          WeWork - Krishe Emerald, Ground Floor, Laxmi Cyber City,
-          HITECH City, Hyderabad, Telangana - 500082
+          Advent Global Solutions Inc.
+          <br />
+          9720 Cypresswood, Suite 300
+          <br />
+          Houston, TX 77070
         </>
       ),
     },
-    { icon: <Phone size={20} />, title: "Phone", body: "+91 73299 99968" },
-    { icon: <Mail size={20} />, title: "Email", body: "info@adventglobal.com" },
+    {
+      icon: <Phone size={20} />,
+      title: "Phone",
+      body: (
+        <a href="tel:+12819703000" className={linkCls}>
+          +1 (281) 970-3000
+        </a>
+      ),
+    },
+    {
+      icon: <Mail size={20} />,
+      title: "Email",
+      body: (
+        <a href="mailto:info@adventglobal.com" className={linkCls}>
+          info@adventglobal.com
+        </a>
+      ),
+    },
+  ];
+
+  const officeGroups = [
+    {
+      region: "Offices in USA",
+      offices: [
+        {
+          city: "Illinois",
+          lines: ["2020 E Algonquin Road, Suite 303", "Schaumburg, IL 60173"],
+        },
+        {
+          city: "Michigan",
+          lines: ["830 Kirts Boulevard, Suite No. 400", "Troy, MI 48084"],
+          phone: { label: "+1 (248) 291-7628", href: "tel:+12482917628" },
+        },
+      ],
+    },
+    {
+      region: "Offices in India",
+      offices: [
+        {
+          city: "Hyderabad",
+          lines: ["1st Floor, Modern Profound Tech Park", "Kondapur, Hyderabad 500084"],
+        },
+        {
+          city: "Bangalore",
+          lines: [
+            "No. 27, Murari Towers, 4th Floor, 100 Ft Road",
+            "Ashoka Pillar, Jayanagar, 2nd Block",
+            "Bengaluru, Karnataka - 560011",
+          ],
+          phone: { label: "080-41256300", href: "tel:+918041256300" },
+        },
+        {
+          city: "Ananthapuram",
+          lines: [
+            "ADI Foundation, besides Kendriya Vidyalaya",
+            "Ananthapuramu, Andhra Pradesh 515003",
+          ],
+        },
+      ],
+    },
   ];
 
   const formEl = (
@@ -304,6 +367,59 @@ export default function ContactPage({ variant = "section" }) {
 
           {/* RIGHT FORM */}
           {formEl}
+        </div>
+
+        {/* OFFICES */}
+        <div className="max-w-6xl mx-auto mt-16 md:mt-20">
+          <h3 className="lp-heading text-2xl md:text-3xl font-semibold text-[#0c1e5b] mb-8 text-center">
+            Our <span className="text-orange-500">Offices</span>
+          </h3>
+
+          <div className="grid md:grid-cols-5 gap-5">
+            {officeGroups.map((group) => (
+              <div
+                key={group.region}
+                className={group.offices.length > 2 ? "md:col-span-3" : "md:col-span-2"}
+              >
+                <h4 className="lp-mono text-xs uppercase tracking-widest text-[#0c1e5b]/50 mb-4">
+                  {group.region}
+                </h4>
+                <div
+                  className={`grid gap-5 ${
+                    group.offices.length > 2 ? "sm:grid-cols-3" : "sm:grid-cols-2"
+                  }`}
+                >
+                  {group.offices.map((office) => (
+                    <div
+                      key={office.city}
+                      className="bg-[#f8f4ed] border border-[#0c1e5b]/10 rounded-2xl p-6 flex flex-col"
+                    >
+                      <div className="flex items-center gap-2 mb-3 text-[#0c1e5b]">
+                        <MapPin size={16} className="text-orange-500 shrink-0" />
+                        <h5 className="font-bold">{office.city}</h5>
+                      </div>
+                      <p className="text-sm text-[#0c1e5b]/65 leading-relaxed">
+                        {office.lines.map((line, i) => (
+                          <span key={i} className="block">
+                            {line}
+                          </span>
+                        ))}
+                      </p>
+                      {office.phone && (
+                        <a
+                          href={office.phone.href}
+                          className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-[#0c1e5b] hover:text-orange-500 transition-colors"
+                        >
+                          <Phone size={14} className="text-orange-500" />
+                          {office.phone.label}
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </main>
